@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>cheerpx-dlopen-read</title>
+    </head>
+    <body>
+        <h1>cheerpx-dlopen-read</h1>
+        <div id="status">initializing…</div>
+        <pre id="output"></pre>
+
+        <script type="module">
+            const status = document.getElementById("status");
+            const output = document.getElementById("output");
+            const log = (line) => {
+                output.textContent += `${line}\n`;
+                console.info(line);
+            };
+            const setStatus = (s, cls = "") => {
+                status.textContent = s;
+                status.className = cls;
+                log(`>>> ${s}`);
+            };
+
+            const params = new URLSearchParams(window.location.search);
+            const version = params.get("v");
+            if (!version) {
+                setStatus("Missing ?v= parameter (e.g. ?v=1.3.3)", "error");
+                window.testError = "no version";
+                throw new Error("no version");
+            }
+
+            const BINARY = params.get("bin") || "/usr/local/bin/main";
+
+            (async () => {
+                try {
+                    setStatus(`loading CheerpX ${version}…`);
+                    const CheerpX = await import(
+                        `https://cxrtnc.leaningtech.com/${version}/cx.esm.js`
+                    );
+
+                    const blockDevice =
+                        await CheerpX.HttpBytesDevice.create("out.ext2");
+                    const idbOverlay =
+                        await CheerpX.IDBDevice.create("dlopen-read-overlay");
+                    await idbOverlay.reset();
+                    const overlayDevice = await CheerpX.OverlayDevice.create(
+                        blockDevice,
+                        idbOverlay,
+                    );
+
+                    const cx = await CheerpX.Linux.create({
+                        mounts: [
+                            { type: "ext2", path: "/", dev: overlayDevice },
+                            { type: "devs", path: "/dev" },
+                            { type: "proc", path: "/proc" },
+                        ],
+                    });
+
+                    cx.setCustomConsole(
+                        (data) => log(new TextDecoder().decode(data).trimEnd()),
+                        80,
+                        24,
+                    );
+
+                    Object.assign(window, { cx });
+
+                    setStatus(`running ${BINARY}…`);
+                    const result = await cx.run(BINARY, [], { uid: 0, gid: 0 });
+                    // CheerpX 1.3.x returns { status: number, ... }; older versions
+                    // returned a bare number.
+                    const exitCode =
+                        typeof result === "number"
+                            ? result
+                            : (result?.status ?? -1);
+
+                    window.testExitCode = exitCode;
+                    window.testOutput = output.textContent;
+
+                    if (output.textContent.includes("REPRODUCED")) {
+                        setStatus(
+                            `REPRODUCED (exit=${exitCode})`,
+                            "reproduced",
+                        );
+                        window.testReproduced = true;
+                    } else if (output.textContent.includes("OK")) {
+                        setStatus(`no mismatch (exit=${exitCode})`, "error");
+                        window.testNoBug = true;
+                    } else {
+                        setStatus(`unexpected exit=${exitCode}`, "error");
+                        window.testError = `unexpected exit=${exitCode}`;
+                    }
+                } catch (e) {
+                    setStatus(`FAIL: ${e.message}`, "error");
+                    window.testError = e.message;
+                }
+            })();
+        </script>
+    </body>
+</html>

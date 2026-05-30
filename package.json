@@ -1,0 +1,12 @@
+{
+  "name": "cheerpx-dlopen-read",
+  "private": true,
+  "scripts": {
+    "build": "./build.sh",
+    "test": "./run.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "serve": "^14.2.6"
+  }
+}

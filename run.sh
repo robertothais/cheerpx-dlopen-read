@@ -10,7 +10,7 @@ if [ ! -f out.ext2 ]; then
     exit 1
 fi
 
-VERSION="${CHEERPX_VERSION:-1.3.3}"
+VERSION="${CHEERPX_VERSION:-1.3.8}"
 
 pnpm exec serve -l 3000 --config serve.json . >/dev/null 2>&1 &
 SERVER_PID=$!

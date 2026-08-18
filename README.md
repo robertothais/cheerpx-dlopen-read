@@ -39,6 +39,6 @@ pnpm build
 pnpm test
 ```
 
-`pnpm build` compiles `librepro.so` and `main` in an i386 Debian image and exports an ext2. `pnpm test` boots CheerpX (1.3.3 by default), runs `main`, and compares the two reads; it prints `REPRODUCED` and exits non-zero when they differ.
+`pnpm build` compiles `librepro.so` and `main` in an i386 Debian image and exports an ext2. `pnpm test` boots CheerpX (1.3.8 by default), runs `main`, and compares the two reads; it prints `REPRODUCED` and exits non-zero when they differ.
 
 For comparison, the same image runs natively: `docker run --rm --platform linux/386 cheerpx-dlopen-read` prints `OK` on Linux.
